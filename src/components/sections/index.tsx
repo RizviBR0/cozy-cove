@@ -1,0 +1,10 @@
+export { HeroSection } from "./hero-section";
+export { TopPicksSection } from "./top-picks-section";
+export { TrendingSection } from "./trending-section";
+export { CozyVibesSection } from "./cozy-vibes-section";
+export { HowItWorksSection } from "./how-it-works-section";
+export { CozyCornerSection } from "./cozy-corner-section";
+export { SavingsJournalSection } from "./savings-journal-section";
+export { BenefitsSection } from "./benefits-section";
+export { FaqSection } from "./faq-section";
+export { FooterCtaSection } from "./footer-cta-section";
