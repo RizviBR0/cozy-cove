@@ -15,6 +15,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
   Sheet,
   SheetContent,
   SheetHeader,
@@ -34,8 +47,13 @@ import {
   MapPin,
   Truck,
   Sparkles,
+  Globe,
+  Loader2,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocation, SUPPORTED_COUNTRIES } from "@/components/providers";
 
 const CATEGORIES = [
   { value: "all", label: "All Categories", icon: "🏠" },
@@ -55,18 +73,14 @@ const SORT_OPTIONS: { value: ProductSortOption; label: string }[] = [
   { value: "newest", label: "Newest" },
 ];
 
-const SHIP_TO_COUNTRIES = [
-  { value: "all", label: "Worldwide" },
-  { value: "us", label: "United States" },
-  { value: "uk", label: "United Kingdom" },
-  { value: "ca", label: "Canada" },
-  { value: "au", label: "Australia" },
-  { value: "de", label: "Germany" },
-  { value: "fr", label: "France" },
-];
-
 function ShopPageContent() {
   const searchParams = useSearchParams();
+  const {
+    countryCode,
+    countryName,
+    isLoading: locationLoading,
+    setCountry,
+  } = useLocation();
 
   const [products] = useState<Product[]>(MOCK_PRODUCTS);
   const [isLoading] = useState(false);
@@ -80,10 +94,11 @@ function ShopPageContent() {
   const [priceRange, setPriceRange] = useState([0, 100]);
   const [minRating, setMinRating] = useState(0);
   const [minDiscount, setMinDiscount] = useState(0);
-  const [shipTo, setShipTo] = useState("all");
   const [freeShippingOnly, setFreeShippingOnly] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const [countryOpen, setCountryOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -164,7 +179,7 @@ function ShopPageContent() {
     priceRange[0] > 0 || priceRange[1] < 100,
     minRating > 0,
     minDiscount > 0,
-    shipTo !== "all",
+    countryCode !== "GLOBAL",
     freeShippingOnly,
   ].filter(Boolean).length;
 
@@ -173,7 +188,7 @@ function ShopPageContent() {
     setPriceRange([0, 100]);
     setMinRating(0);
     setMinDiscount(0);
-    setShipTo("all");
+    setCountry("GLOBAL");
     setFreeShippingOnly(false);
     setSearchQuery("");
   };
@@ -186,24 +201,60 @@ function ShopPageContent() {
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
           Category
         </h3>
-        <div className="space-y-1">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat.value}
-              onClick={() => setCategory(cat.value)}
-              className={cn(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left text-sm transition-all",
-                category === cat.value
-                  ? "bg-foreground text-background font-medium"
-                  : "hover:bg-muted text-foreground"
-              )}
+        <Popover open={categoryOpen} onOpenChange={setCategoryOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={categoryOpen}
+              className="w-full h-10 justify-between font-normal"
             >
-              <span className="text-base">{cat.icon}</span>
-              <span>{cat.label}</span>
-              {category === cat.value && <span className="ml-auto">✓</span>}
-            </button>
-          ))}
-        </div>
+              <span className="flex items-center gap-2 truncate">
+                <span>
+                  {CATEGORIES.find((c) => c.value === category)?.icon}
+                </span>
+                <span>
+                  {CATEGORIES.find((c) => c.value === category)?.label ||
+                    "Select category"}
+                </span>
+              </span>
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            className="min-w-[var(--radix-popover-trigger-width)] w-full p-0"
+            align="start"
+            sideOffset={4}
+          >
+            <Command>
+              <CommandInput placeholder="Search category..." />
+              <CommandList className="max-h-[200px]">
+                <CommandEmpty>No category found.</CommandEmpty>
+                <CommandGroup>
+                  {CATEGORIES.map((cat) => (
+                    <CommandItem
+                      key={cat.value}
+                      value={cat.label}
+                      onSelect={() => {
+                        setCategory(cat.value);
+                        setCategoryOpen(false);
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          category === cat.value ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      <span className="mr-2">{cat.icon}</span>
+                      {cat.label}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
       </div>
 
       <hr className="border-border" />
@@ -213,19 +264,66 @@ function ShopPageContent() {
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
           <MapPin className="w-3.5 h-3.5" />
           Ship To
+          {locationLoading && <Loader2 className="w-3 h-3 animate-spin" />}
         </h3>
-        <Select value={shipTo} onValueChange={setShipTo}>
-          <SelectTrigger className="w-full h-10">
-            <SelectValue placeholder="Select country" />
-          </SelectTrigger>
-          <SelectContent>
-            {SHIP_TO_COUNTRIES.map((country) => (
-              <SelectItem key={country.value} value={country.value}>
-                {country.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Popover open={countryOpen} onOpenChange={setCountryOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={countryOpen}
+              className="w-full h-10 justify-between font-normal"
+            >
+              <span className="flex items-center gap-2 truncate">
+                <Globe className="w-4 h-4" />
+                <span>
+                  {SUPPORTED_COUNTRIES.find((c) => c.code === countryCode)
+                    ?.name || "Select country"}
+                </span>
+              </span>
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            className="min-w-[var(--radix-popover-trigger-width)] w-full p-0"
+            align="start"
+            sideOffset={4}
+          >
+            <Command>
+              <CommandInput placeholder="Search country..." />
+              <CommandList className="max-h-[200px]">
+                <CommandEmpty>No country found.</CommandEmpty>
+                <CommandGroup>
+                  {SUPPORTED_COUNTRIES.map((country) => (
+                    <CommandItem
+                      key={country.code}
+                      value={country.name}
+                      onSelect={() => {
+                        setCountry(country.code);
+                        setCountryOpen(false);
+                      }}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          countryCode === country.code
+                            ? "opacity-100"
+                            : "opacity-0"
+                        )}
+                      />
+                      {country.name}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+        {countryCode !== "GLOBAL" && (
+          <p className="text-xs text-muted-foreground mt-2">
+            📍 Auto-detected: {countryName}
+          </p>
+        )}
       </div>
 
       {/* Free Shipping Toggle */}
@@ -465,7 +563,7 @@ function ShopPageContent() {
                 value={sort}
                 onValueChange={(v) => setSort(v as ProductSortOption)}
               >
-                <SelectTrigger className="w-auto min-w-[140px] h-12 rounded-xl bg-background border-0 shadow-sm">
+                <SelectTrigger className="w-[160px] !h-12 rounded-xl bg-background border-0 shadow-sm">
                   <ArrowUpDown className="mr-2 h-4 w-4 shrink-0" />
                   <SelectValue placeholder="Sort" />
                 </SelectTrigger>
@@ -518,14 +616,13 @@ function ShopPageContent() {
                   <X className="ml-1 h-3 w-3" />
                 </Badge>
               )}
-              {shipTo !== "all" && (
+              {countryCode !== "GLOBAL" && (
                 <Badge
                   variant="secondary"
                   className="cursor-pointer hover:bg-destructive/20"
-                  onClick={() => setShipTo("all")}
+                  onClick={() => setCountry("GLOBAL")}
                 >
-                  Ship to:{" "}
-                  {SHIP_TO_COUNTRIES.find((c) => c.value === shipTo)?.label}
+                  Ship to: {countryName}
                   <X className="ml-1 h-3 w-3" />
                 </Badge>
               )}
