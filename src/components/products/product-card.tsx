@@ -16,6 +16,7 @@ interface ProductCardProps {
   priority?: boolean;
   onFavoriteToggle?: (productId: string, isFavorite: boolean) => void;
   isFavorite?: boolean;
+  showBadges?: boolean;
 }
 
 export function ProductCard({
@@ -23,6 +24,7 @@ export function ProductCard({
   priority = false,
   onFavoriteToggle,
   isFavorite = false,
+  showBadges = true,
 }: ProductCardProps) {
   const { isAuthenticated } = useAuth();
   const [isFavorited, setIsFavorited] = useState(isFavorite);
@@ -139,46 +141,47 @@ export function ProductCard({
           </button>
 
           {/* Ribbon Badge - shows most important one */}
-          {(() => {
-            // Priority: HOT > NEW > BEST > TOP
-            let ribbonText = "";
-            let ribbonColor = "";
+          {showBadges &&
+            (() => {
+              // Priority: HOT > NEW > BEST > TOP
+              let ribbonText = "";
+              let ribbonColor = "";
 
-            if (product.discountPercent && product.discountPercent >= 50) {
-              ribbonText = "HOT DEAL";
-              ribbonColor = "bg-gradient-to-r from-rose-500 to-pink-500";
-            } else if (
-              product.firstSeenAt &&
-              Date.now() - product.firstSeenAt.getTime() <
-                7 * 24 * 60 * 60 * 1000
-            ) {
-              ribbonText = "NEW";
-              ribbonColor = "bg-gradient-to-r from-blue-500 to-cyan-500";
-            } else if (product.orders && product.orders > 1000) {
-              ribbonText = "BEST SELLER";
-              ribbonColor = "bg-gradient-to-r from-amber-500 to-orange-500";
-            } else if (product.rating && product.rating >= 4.5) {
-              ribbonText = "TOP RATED";
-              ribbonColor = "bg-gradient-to-r from-emerald-500 to-teal-500";
-            }
+              if (product.discountPercent && product.discountPercent >= 50) {
+                ribbonText = "HOT DEAL";
+                ribbonColor = "bg-gradient-to-r from-rose-500 to-pink-500";
+              } else if (
+                product.firstSeenAt &&
+                Date.now() - product.firstSeenAt.getTime() <
+                  7 * 24 * 60 * 60 * 1000
+              ) {
+                ribbonText = "NEW";
+                ribbonColor = "bg-gradient-to-r from-blue-500 to-cyan-500";
+              } else if (product.orders && product.orders > 1000) {
+                ribbonText = "BEST SELLER";
+                ribbonColor = "bg-gradient-to-r from-amber-500 to-orange-500";
+              } else if (product.rating && product.rating >= 4.5) {
+                ribbonText = "TOP RATED";
+                ribbonColor = "bg-gradient-to-r from-emerald-500 to-teal-500";
+              }
 
-            if (!ribbonText) return null;
+              if (!ribbonText) return null;
 
-            return (
-              <div className="absolute top-0 left-0 overflow-hidden w-28 h-28 pointer-events-none z-10">
-                <div
-                  className={cn(
-                    "absolute top-4 -left-7 w-32 text-center py-1",
-                    "text-[9px] font-bold text-white uppercase tracking-wider",
-                    "shadow-lg -rotate-45 transform",
-                    ribbonColor
-                  )}
-                >
-                  {ribbonText}
+              return (
+                <div className="absolute top-0 left-0 overflow-hidden w-28 h-28 pointer-events-none z-10">
+                  <div
+                    className={cn(
+                      "absolute top-4 -left-7 w-32 text-center py-1",
+                      "text-[9px] font-bold text-white uppercase tracking-wider",
+                      "shadow-lg -rotate-45 transform",
+                      ribbonColor
+                    )}
+                  >
+                    {ribbonText}
+                  </div>
                 </div>
-              </div>
-            );
-          })()}
+              );
+            })()}
         </div>
 
         {/* Content */}
