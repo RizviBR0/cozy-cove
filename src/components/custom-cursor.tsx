@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { motion, useMotionValue, useSpring } from "framer-motion";
 import { useAuth } from "@/components/providers";
+import { usePathname } from "next/navigation";
 
 /**
  * Custom Cursor Component
@@ -19,6 +20,7 @@ import { useAuth } from "@/components/providers";
  */
 export function CustomCursor() {
   const { user, isAuthenticated, isLoading } = useAuth();
+  const pathname = usePathname();
   const [isVisible, setIsVisible] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const cursorRef = useRef<HTMLDivElement>(null);
@@ -94,7 +96,13 @@ export function CustomCursor() {
   // - Still loading
   // - User prefers reduced motion
   // - No user data
-  if (!isAuthenticated || isLoading || prefersReducedMotion || !user) {
+  if (
+    !isAuthenticated ||
+    isLoading ||
+    prefersReducedMotion ||
+    !user ||
+    pathname !== "/"
+  ) {
     return null;
   }
 

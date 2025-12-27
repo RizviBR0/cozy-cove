@@ -24,6 +24,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   signIn: (email: string) => Promise<{ error: Error | null }>;
+  verifyOtp: (email: string, token: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -109,12 +110,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSession(null);
   }, [supabase.auth]);
 
+  const verifyOtp = useCallback(
+    async (email: string, token: string) => {
+      try {
+        const { error } = await supabase.auth.verifyOtp({
+          email,
+          token,
+          type: "email",
+        });
+
+        if (error) {
+          return { error };
+        }
+
+        return { error: null };
+      } catch (error) {
+        return { error: error as Error };
+      }
+    },
+    [supabase.auth]
+  );
+
   const value: AuthContextType = {
     user,
     session,
     isLoading,
     isAuthenticated: !!user,
     signIn,
+    verifyOtp,
     signOut,
   };
 
