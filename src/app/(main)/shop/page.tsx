@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation";
-import { ProductGrid } from "@/components/products";
+import { InfiniteProductGrid } from "@/components/products/infinite-product-grid";
+import { getProducts } from "@/app/actions/products";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +36,6 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Slider } from "@/components/ui/slider";
-import { MOCK_PRODUCTS } from "@/lib/aliexpress";
 import { Product, ProductSortOption } from "@/lib/types";
 import {
   Search,
@@ -82,8 +82,9 @@ function ShopPageContent() {
     setCountry,
   } = useLocation();
 
-  const [products] = useState<Product[]>(MOCK_PRODUCTS);
-  const [isLoading] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [category, setCategory] = useState(
     searchParams.get("category") || "all"
@@ -108,70 +109,50 @@ function ShopPageContent() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const filteredProducts = useMemo(() => {
-    let result = [...products];
+  const filteredProducts = products; // Compatibility alias
 
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(
-        (p) =>
-          p.title.toLowerCase().includes(query) ||
-          p.category?.toLowerCase().includes(query)
-      );
-    }
+  // Fetch products when filters change
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setIsLoading(true);
+      try {
+        // Debounce search a bit if needed, but for now direct call
+        const response = await getProducts({
+          page: 1,
+          limit: 12,
+          search: searchQuery,
+          category,
+          sort,
+          minPrice: priceRange[0],
+          maxPrice: priceRange[1],
+          minRating,
+          minDiscount,
+          countryCode,
+          freeShippingOnly,
+        });
+        setProducts(response.products);
+        setTotalProducts(response.total);
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    if (category !== "all") {
-      result = result.filter((p) =>
-        p.category?.toLowerCase().includes(category.toLowerCase())
-      );
-    }
+    const timer = setTimeout(() => {
+      fetchProducts();
+    }, 300); // 300ms debounce for all filter changes
 
-    result = result.filter(
-      (p) => p.price >= priceRange[0] && p.price <= priceRange[1]
-    );
-
-    if (minRating > 0) {
-      result = result.filter((p) => (p.rating || 0) >= minRating);
-    }
-
-    if (minDiscount > 0) {
-      result = result.filter((p) => (p.discountPercent || 0) >= minDiscount);
-    }
-
-    switch (sort) {
-      case "price-low":
-        result.sort((a, b) => a.price - b.price);
-        break;
-      case "price-high":
-        result.sort((a, b) => b.price - a.price);
-        break;
-      case "top-rated":
-        result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        break;
-      case "biggest-savings":
-        result.sort(
-          (a, b) => (b.discountPercent || 0) - (a.discountPercent || 0)
-        );
-        break;
-      case "newest":
-        result.sort(
-          (a, b) =>
-            (b.firstSeenAt?.getTime() || 0) - (a.firstSeenAt?.getTime() || 0)
-        );
-        break;
-      default:
-        break;
-    }
-
-    return result;
+    return () => clearTimeout(timer);
   }, [
-    products,
     searchQuery,
     category,
     sort,
     priceRange,
     minRating,
     minDiscount,
+    countryCode,
+    freeShippingOnly,
   ]);
 
   const activeFiltersCount = [
@@ -681,20 +662,39 @@ function ShopPageContent() {
           <p className="text-muted-foreground">
             Showing{" "}
             <span className="font-semibold text-foreground">
-              {filteredProducts.length}
+              {totalProducts}
             </span>{" "}
             deals
           </p>
         </div>
 
         {/* Product Grid */}
-        <ProductGrid
-          products={filteredProducts}
-          isLoading={isLoading}
-          columns={4}
-          emptyMessage="No deals match your filters"
-          emptyAction={{ label: "Clear filters", href: "/shop" }}
-        />
+        {isLoading ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div
+                key={i}
+                className="aspect-[4/5] bg-muted rounded-2xl animate-pulse"
+              />
+            ))}
+          </div>
+        ) : (
+          <InfiniteProductGrid
+            initialProducts={products}
+            initialTotal={totalProducts}
+            searchParams={{
+              search: searchQuery,
+              category,
+              sort,
+              minPrice: priceRange[0],
+              maxPrice: priceRange[1],
+              minRating,
+              minDiscount,
+              countryCode,
+              freeShippingOnly,
+            }}
+          />
+        )}
       </div>
     </div>
   );

@@ -98,16 +98,6 @@ export function Footer() {
 
         <Separator className="my-8" />
 
-        {/* Affiliate Disclosure */}
-        <div className="bg-muted/50 rounded-lg p-4 mb-8">
-          <p className="text-xs text-muted-foreground text-center">
-            <strong className="text-foreground">Affiliate Disclosure:</strong>{" "}
-            Cozy Cove participates in the AliExpress affiliate program. When you
-            purchase through our links, we may earn a commission at no extra
-            cost to you. This helps us keep finding great deals for you!
-          </p>
-        </div>
-
         {/* Copyright */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <p>© {currentYear} Cozy Cove. All rights reserved.</p>

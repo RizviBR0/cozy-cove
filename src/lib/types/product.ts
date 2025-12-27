@@ -16,6 +16,10 @@ export interface Product {
   tags: string[];
   firstSeenAt?: Date;
   updatedAt?: Date;
+  shipping?: {
+    free: boolean;
+    cost?: number;
+  };
 }
 
 /**
